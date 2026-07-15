@@ -273,9 +273,11 @@ export default function App() {
       setPulseMsg((p) => (p + 1) % PULSE_MESSAGES.length);
     }, 900);
     try {
-      const res = await axios.post("http://localhost:8000/generate", {
-        requirement: requirement.trim(),
-      });
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// ...
+const res = await axios.post(`${API_URL}/generate`, {
+  requirement: requirement.trim(),
+});
       setResult(res.data);
 
       // ── Save to history ──
