@@ -15,7 +15,6 @@ cffi==2.0.0
 charset-normalizer==3.4.6
 chromadb==1.1.1
 click==8.1.8
-crewai==1.12.2
 cryptography==46.0.6
 deprecation==2.1.0
 diskcache==5.6.3
