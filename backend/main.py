@@ -1,31 +1,25 @@
+import os
+import json
+import re
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from openai import OpenAI
-import os
-import json
-import re
+from google import genai
 
 # Load .env file
 load_dotenv()
 
-# Configure NVIDIA API
-api_key = os.getenv("NVIDIA_API_KEY")
-if not api_key:
-    raise RuntimeError("NVIDIA_API_KEY not found in .env file!")
-
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=api_key
-)
+# Initialize Gemini Client
+gemini_api_key = os.getenv("GEMINI_API_KEY", "dummy_key_for_testing")
+client = genai.Client(api_key=gemini_api_key)
 
 app = FastAPI(title="DevMind Solution Architect API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins — tighten this after testing by replacing * with your Vercel URL e.g. "https://devmind.vercel.app"
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -57,7 +51,6 @@ def extract_json(text: str) -> dict:
     """Robustly extract JSON from the AI response."""
     text = text.strip()
     
-    # 1. Try to find the first '{' and the last '}'
     start_idx = text.find('{')
     end_idx = text.rfind('}')
     
@@ -69,11 +62,10 @@ def extract_json(text: str) -> dict:
     try:
         return json.loads(json_str)
     except json.JSONDecodeError as e:
-        # 2. If it fails, try cleaning out common markdown artifacts
         json_str = json_str.replace('```json', '').replace('```', '')
         try:
             return json.loads(json_str)
-        except:
+        except Exception:
             raise ValueError(f"Failed to parse JSON: {str(e)}")
 
 def fix_mermaid(diagram: str) -> str:
@@ -93,16 +85,13 @@ async def generate_architecture(request: ArchitectureRequest):
         raise HTTPException(status_code=400, detail="Requirement empty")
 
     try:
-        completion = client.chat.completions.create(
-            model="meta/llama-3.1-405b-instruct",
-            messages=[
-                {"role": "system", "content": "You are an AWS Architect. Output JSON only."},
-                {"role": "user", "content": PROMPT_TEMPLATE.format(requirement=request.requirement)}
-            ],
-            temperature=0.2,
+        # Corrected call for Google GenAI SDK
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=PROMPT_TEMPLATE.format(requirement=request.requirement),
         )
 
-        raw_text = completion.choices[0].message.content
+        raw_text = response.text
         data = extract_json(raw_text)
 
         if "mermaid_diagram" in data:
