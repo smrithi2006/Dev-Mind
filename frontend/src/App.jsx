@@ -238,6 +238,7 @@ function HistoryPanel({ history, onSelect, onClear, isOpen, onClose }) {
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const [currentView, setCurrentView] = useState("landing");
   const [theme, setTheme] = useState("dark");
   const [requirement, setRequirement] = useState("");
@@ -273,11 +274,9 @@ export default function App() {
       setPulseMsg((p) => (p + 1) % PULSE_MESSAGES.length);
     }, 900);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-// ...
-const res = await axios.post(`${API_URL}/generate`, {
-  requirement: requirement.trim(),
-});
+      const res = await axios.post(`${API_URL}/generate`, {
+        requirement: requirement.trim(),
+      });
       setResult(res.data);
 
       // ── Save to history ──
