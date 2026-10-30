@@ -75,6 +75,10 @@ def fix_mermaid(diagram: str) -> str:
     diagram = diagram.replace(';', '')
     return diagram.strip()
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "DevMind Backend"}
+
 @app.get("/")
 def read_root():
     return {"status": "Running"}
