@@ -41,15 +41,15 @@ pipeline {
             steps {
                 echo "Deploying FastAPI backend server on port ${PORT}..."
                 sh '''
-                    # Terminate any existing instance running on port 8000
+                    # Free up port 8000 if currently occupied
                     lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-                    
-                    # Start FastAPI server in the background using uvicorn
-                    nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
-                    
-                    # Allow server 3 seconds to spin up
+
+                    # Start uvicorn server in background detached from Jenkins process tree
+                    JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+
+                    # Wait 3 seconds for server to initialize
                     sleep 3
-                    
+
                     # Verify health endpoint response
                     curl -s http://localhost:8000/health | grep -q "healthy" && echo "Deployment Successful: Health Endpoint Responding OK"
                 '''
