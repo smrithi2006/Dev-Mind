@@ -104,4 +104,4 @@ async def generate_architecture(request: ArchitectureRequest):
         return data
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))# Feature branch update
