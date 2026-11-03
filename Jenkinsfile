@@ -40,19 +40,10 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 echo "Deploying FastAPI backend server on port ${PORT}..."
-                sh '''
-                    # Kill existing uvicorn process on port 8000 if running
-                    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-
-                    # Start uvicorn in background detached from Jenkins process tree
-                    JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
-
-                    # Wait for backend initialization
-                    sleep 5
-
-                    # Health check verification
-                    curl -s http://localhost:8000/health | grep -q "healthy" && echo "Deployment Successful: Health Endpoint Responding OK"
-                '''
+                sh 'lsof -ti:8000 | xargs kill -9 2>/dev/null || true'
+                sh 'JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &'
+                sh 'sleep 4'
+                sh 'curl -s http://localhost:8000/health | grep healthy'
             }
         }
     }
