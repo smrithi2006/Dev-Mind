@@ -41,16 +41,31 @@ pipeline {
             steps {
                 echo "Deploying FastAPI backend server on port ${PORT}..."
                 sh '''
-                    cat << 'SCRIPT' > deploy.sh
-#!/bin/bash
-lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-BUILD_ID=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
-echo $! > app.pid
-SCRIPT
-                    chmod +x deploy.sh
-                    ./deploy.sh
-                    sleep 5
-                    curl -s http://localhost:8000/health | grep healthy && echo "Deployment Successful: Health Endpoint Responding OK"
+                    # Free port 8000
+                    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+
+                    # Start uvicorn with explicit python3 module invocation
+                    JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 > uvicorn.log 2>&1 &
+                    
+                    # Sleep to allow server initialization
+                    sleep 3
+
+                    # Check health status via Python httpx/urllib fallback
+                    python3 -c "
+import urllib.request, time, sys
+for i in range(5):
+    try:
+        res = urllib.request.urlopen('http://127.0.0.1:8000/health')
+        if res.getcode() == 200:
+            print('Deployment Successful: Health Endpoint Responding OK')
+            sys.exit(0)
+    except Exception as e:
+        time.sleep(1)
+print('Health check failed! Server log contents:')
+with open('uvicorn.log') as f:
+    print(f.read())
+sys.exit(1)
+"
                 '''
             }
         }
