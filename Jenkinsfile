@@ -4,6 +4,7 @@ pipeline {
     environment {
         PYTHONUNBUFFERED = '1'
         BUILD_TAG = "v1.0.${BUILD_NUMBER}"
+        PORT = '8000'
     }
 
     stages {
@@ -35,18 +36,37 @@ pipeline {
                 sh "tar -czvf devmind_backend_${BUILD_TAG}.tar.gz backend/"
             }
         }
+
+        stage('Deploy Application') {
+            steps {
+                echo "Deploying FastAPI backend server on port ${PORT}..."
+                sh '''
+                    # Terminate any existing instance running on port 8000
+                    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+                    
+                    # Start FastAPI server in the background using uvicorn
+                    nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+                    
+                    # Allow server 3 seconds to spin up
+                    sleep 3
+                    
+                    # Verify health endpoint response
+                    curl -s http://localhost:8000/health | grep -q "healthy" && echo "Deployment Successful: Health Endpoint Responding OK"
+                '''
+            }
+        }
     }
 
     post {
         always {
             archiveArtifacts artifacts: "devmind_backend_*.tar.gz", allowEmptyArchive: true
-            echo "CI Execution finished for build: ${BUILD_TAG}"
+            echo "CI/CD Execution finished for build: ${BUILD_TAG}"
         }
         success {
-            echo 'CI Pipeline execution succeeded!'
+            echo 'CI/CD Pipeline execution succeeded!'
         }
         failure {
-            echo 'CI Pipeline execution failed!'
+            echo 'CI/CD Pipeline execution failed!'
         }
     }
 }
