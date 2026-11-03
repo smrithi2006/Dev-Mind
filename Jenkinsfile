@@ -41,10 +41,16 @@ pipeline {
             steps {
                 echo "Deploying FastAPI backend server on port ${PORT}..."
                 sh '''
-                    lsof -ti:8000 | xargs kill -9 2>/dev/null || true
-                    JENKINS_NODE_COOKIE=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+                    cat << 'SCRIPT' > deploy.sh
+#!/bin/bash
+lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+BUILD_ID=dontKillMe nohup python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+echo $! > app.pid
+SCRIPT
+                    chmod +x deploy.sh
+                    ./deploy.sh
                     sleep 5
-                    curl -s http://localhost:8000/health | grep healthy
+                    curl -s http://localhost:8000/health | grep healthy && echo "Deployment Successful: Health Endpoint Responding OK"
                 '''
             }
         }
