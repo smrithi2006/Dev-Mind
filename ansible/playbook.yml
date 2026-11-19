@@ -1,0 +1,5 @@
+---
+- name: Configure DevMind Application Environment
+  hosts: localhost
+  roles:
+    - devmind_app

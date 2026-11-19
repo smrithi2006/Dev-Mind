@@ -1,7 +1,2 @@
 fastapi
-uvicorn[standard]
-python-dotenv
-openai
-pydantic
-pytest
-httpx
+uvicorn

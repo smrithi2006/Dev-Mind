@@ -1,0 +1,17 @@
+---
+- name: Ensure deployment directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create environment configuration file
+  ansible.builtin.copy:
+    content: "PORT={{ app_port }}\nENV={{ app_env }}\n"
+    dest: "{{ app_dir }}/.env"
+    mode: '0644'
+  notify: restart devmind service
+
+- name: Verify application configuration
+  ansible.builtin.debug:
+    msg: "DevMind environment configured successfully on port {{ app_port }}"

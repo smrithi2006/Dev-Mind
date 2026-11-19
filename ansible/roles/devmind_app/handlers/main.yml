@@ -1,0 +1,4 @@
+---
+- name: restart devmind service
+  ansible.builtin.debug:
+    msg: "Handler Triggered: DevMind service configuration updated, restarting process..."
